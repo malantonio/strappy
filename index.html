@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>strappy</title>
+    <link href="bootstrap-combined.min.css" rel="stylesheet">
+    <style>
+    #barcode {
+      font-weight: normal;
+      font-style: normal;
+      line-height: normal;
+      font-size: 10px;
+    }
+    
+    #container {
+      margin-top: 25%;
+    }
+  
+    #otherthing {
+      width:250px;
+      left:20px;
+    }
+    </style>
+    <body>
+
+  </head>
+  <body>
+  <div id="rendered"></div>
+
+  <script src="jquery-2.1.1.min.js"></script>
+  <script src="mustache.js"></script>
+  <script src="marked.min.js"></script>
+  <script src="connectcode-javascript-code39.js"></script>
+
+  <script id="strap" type="x-tmpl-mustache">
+    <div id="container" class="span4">
+      <div id="otherthing">
+        {{# lender }}
+          <p>Lender: <strong>{{ lender }}</strong></p>
+        {{/ lender }}
+      
+        {{# patron }}
+          <p>Patron: <strong>{{ patron }}</strong></p>
+        {{/ patron }}
+      
+        {{# barcode }}
+          <p>Barcode/ILL#</p>
+          <p id="barcode">({{ barcode }})</p>
+        {{/ barcode }}
+      
+        {{# dueDate }}
+          <p>Due Date: <h3 class="dueDate" contenteditable="true">{{ dueDate }}</h3></p>
+        {{/ dueDate }}
+      
+        {{# body }}
+          {{{ body }}}
+        {{/ body }}
+      </div>
+    </div>
+  </script>
+
+  <script id="form" type="x-tmpl-mustache">
+    <div class="container-fluid">
+      <form class="form form-horizontal" action="." method="get">
+        <legend>Build an Interlibrary Loan strap</legend>
+        <div class="control-group">
+          <label class="control-label" for="lender">Lender Symbol</label>
+          <div class="controls">
+            <input type="text" id="lender" name="lender" required />
+          </div>
+        </div>
+        
+        <div class="control-group">
+          <label class="control-label" for="patron">Patron Name</label>
+          <div class="controls">
+            <input type="text" id="patron" name="patron" required />
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label class="control-label" for="barcode">Barcode #</label>
+          <div class="controls">
+            <input type="text" id="barcode_input" name="barcode" required />
+          </div>
+        </div>
+        
+        <div class="control-group">
+          <label class="control-label" for="dueDate">Due Date</label>
+          <div class="controls">
+            <input type="date" id="dueDate" name="dueDate" required />
+          </div>
+        </div>
+
+        <div class="control-group">
+          <div class="controls">
+            <button type="submit" class="btn btn-default">Generate your strap!</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </script>
+
+  <script>
+  var template = $('#strap').html()
+    , $target = $('#rendered')
+    , query_string = document.location.search
+    , qs = {}
+    , rendered, bc
+      ;
+
+    if ( !query_string ) {
+
+      $target.html($('#form').html());
+
+    } else {
+      query_string.substring(1).split('&').forEach(function(kv) {
+        var item = kv.split('=')
+          , key = item[0]
+          , val = decodeURIComponent(item[1]).replace(/\+/g, ' ')
+            ;
+
+        qs[key] = val;
+      });
+
+      $.get('strap_body.md').done(function(body) {
+        qs.body = marked(body);
+
+        Mustache.parse(template);
+        $target.html(Mustache.render(template, qs));
+
+        var $barcode = $('#barcode')
+        bc = $barcode.text();
+        console.log(bc);
+
+        $barcode.html(DrawHTMLBarcode_Code39(
+          bc,       // data
+          0,        // checkDigit
+          'yes',    // humanReadable
+          'in',     // units
+          0,        // minBarWidth
+          3,        // width
+          .35,      // height
+          3,        // barWidthRatio
+          'bottom', // textLocation
+          'center', // textAlignment
+          '',       // textStyle
+          'black',  // foreColor
+          'white'   // backColor
+        ));
+
+        $('#barcode div span').each(function() {
+          $(this).text($(this).text().replace(/\*/g, ''));
+        });
+      });
+    }
+  </script>
+  </body>
+</html>
