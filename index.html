@@ -102,6 +102,13 @@
         </div>
       </form>
     </div>
+    <div class="container-fluid">
+        <div class="row-fluid">
+            <div class="span1">
+                <a id="bookmarklet" href="#" class="label label-info">Strappy</a>
+            </div>
+        </div>
+    </div>
   </script>
 
   <script>
@@ -109,12 +116,52 @@
     , $target = $('#rendered')
     , query_string = document.location.search
     , qs = {}
-    , rendered, bc
+    , wsClasses = {
+        dueDateClass: 'yui-field-originalDueDate',
+        lendingLibrary: 'lendingInformationExtra',
+        patron: 'patronExtra',
+        barcode: 'accordionRequestDetailsRequestId'
+      }
+    , strappySource = document.location.href
+    , rendered, bc, $form, $bookmarklet
       ;
 
     if ( !query_string ) {
+        $form = $('#form'),
+        $target.html($form.html());
 
-      $target.html($('#form').html());
+        $bookmarklet = $('#bookmarklet');
+        $bookmarklet.attr('href', 'javascript:'
+            +'(function(){'
+                // collect our classes
+            +   'var d=document.getElementsByClassName("' + wsClasses.dueDateClass + '")'
+            +   ',l=document.getElementsByClassName("' + wsClasses.lendingLibrary + '")'
+            +   ',p=document.getElementsByClassName("' + wsClasses.patron + '")'
+            +   ',b=document.getElementsByClassName("' + wsClasses.barcode + '")'
+                // path generated from location
+            +   ',path="' + strappySource + '",url;'
+                // if these don't exist, or are empty, call it quits
+            +   'if(!d|!d.length|!l|!l.length|!p|!p.length|!b|!b.length){return false;}'
+                // 
+            +   'd=d[d.length-1].textContent;'
+            +   'l=l[l.length-1].textContent.replace("(Supplier: ","").replace(")","");'
+            +   'p=p[p.length-1].textContent.replace("(","").replace(")","");'
+            +   'b=b[b.length-1].textContent;'
+            +   'window.open('
+                    // assemble uri
+            +      'path'
+            +       '+"'
+            +       '?barcode="+b+"'
+            +       '&lender="+l+"'
+            +       '&patron="+encodeURI(p)+"'
+            +       '&dueDate="+encodeURI(d)'
+                    // open in new tab/window
+            +       ',"_blank"'
+                // close .open function
+            +   ');'
+                // close bookmarklet + invoke
+            +'})()'
+            );
 
     } else {
       query_string.substring(1).split('&').forEach(function(kv) {
